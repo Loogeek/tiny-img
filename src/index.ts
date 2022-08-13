@@ -1,7 +1,7 @@
-import { loadConfig } from 'unconfig'
-import type { ExportConfig } from './types'
-import { getAllConfig } from './config'
-import { startOptimize } from './utils'
+import { loadConfig } from 'unconfig';
+import type { ExportConfig } from './types';
+import { getAllConfig } from './config';
+import { startOptimize } from './utils';
 
 const { config } = await loadConfig<ExportConfig>({
   sources: [
@@ -10,8 +10,8 @@ const { config } = await loadConfig<ExportConfig>({
       extensions: ['ts', 'mts', 'cts', 'js', 'mjs', 'cjs', 'json'],
     },
   ],
-})
+});
 
-const configs = getAllConfig(config)
+const configs = getAllConfig(config);
 
-startOptimize(configs, config.APIKey)
+startOptimize(configs, config.APIKey);

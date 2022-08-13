@@ -1,5 +1,5 @@
 {
-  "extends": "@antfu",
+  "extends": ["@antfu", "plugin:prettier/recommended"],
   "rules": {
     "no-console": 0,
     "@typescript-eslint/no-unused-vars": 1
