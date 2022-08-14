@@ -1,10 +1,10 @@
 export interface Config {
-  targetDir: string
+  targetDir: string;
 }
 
 export interface ExportConfig {
-  configs: Config[]
-  APIKey: string
+  configs: Config[];
+  APIKey: string;
 }
 
-export type RecordType = 'add' | 'remove'
+export type RecordType = 'add' | 'unlink' | 'change';

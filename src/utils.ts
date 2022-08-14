@@ -5,11 +5,13 @@ import figlet from 'figlet';
 import tinify from 'tinify';
 import chalk from 'chalk';
 import chokidar from 'chokidar';
+import fse from 'fs-extra';
 import ora from 'ora';
 
-import type { Config, ExportConfig, RecordType } from './types';
+import type { Config, RecordType } from './types';
 
 const log = console.log;
+const RECORD_FILE_PATH = path.resolve(cwd(), 'record.json');
 
 export async function startOptimize(configs: Config[], APIKey: string) {
   tinify.key = APIKey;
@@ -17,7 +19,7 @@ export async function startOptimize(configs: Config[], APIKey: string) {
   await ConsoleFiglet('tiny img is running!');
   for (const config of configs) {
     const { targetDir } = config;
-    log(chalk.bgBlue.bold(`${targetDir} is watching ~~\n`));
+    log(chalk.bgBlue.bold(`${targetDir} is watching~~~\n`));
 
     chokidar
       .watch(path.resolve(cwd(), targetDir), {
@@ -30,7 +32,7 @@ export async function startOptimize(configs: Config[], APIKey: string) {
             reduceImg(pathDir, pathDir);
             break;
           case 'unlink':
-            removeImg();
+            autoRecord('unlink', pathDir);
             break;
           case 'change':
           default:
@@ -55,17 +57,65 @@ function reduceImg(fileDir: string, targetDir: string) {
         spinner.succeed();
       });
   } catch (err) {
+    log(chalk.red(`tinify Error: ${err}`));
     spinner.fail();
   }
 }
 
-function removeImg() {}
+async function isFileExist(fileDir: string) {
+  return new Promise((resolve) => {
+    return fs.access(fileDir, fs.constants.F_OK, (err) => {
+      resolve(!err);
+    });
+  });
+}
 
-function autoRecord(type: RecordType, fileDir: string) {
-  switch (type) {
+async function addRecord(pathDir: string) {
+  const isExist = await isFileExist(RECORD_FILE_PATH);
+  const fileName = await getFileName(pathDir);
+
+  if (isExist) {
+    const json: Object = await fse.readJsonSync(RECORD_FILE_PATH);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    json[fileName] = pathDir;
+
+    fse.writeJSONSync(RECORD_FILE_PATH, json);
+  } else {
+    fse.writeJsonSync(RECORD_FILE_PATH, { [fileName]: pathDir });
+  }
+}
+
+async function removeRecord(pathDir: string) {
+  const isExist = await isFileExist(RECORD_FILE_PATH);
+  const fileName = await getFileName(pathDir);
+  if (isExist) {
+    const json: Object = await fse.readJsonSync(RECORD_FILE_PATH);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    delete json[fileName];
+    fse.writeJSONSync(RECORD_FILE_PATH, json);
+  }
+}
+
+function autoRecord(action: RecordType, fileDir: string) {
+  if (!isImageFile(fileDir)) return;
+
+  switch (action) {
     case 'add':
+      addRecord(fileDir);
+      break;
+    case 'unlink':
+      removeRecord(fileDir);
+      break;
+    case 'change':
+    default:
       break;
   }
+}
+
+function getFileName(pathDir: string) {
+  return path.basename(pathDir);
 }
 
 function getFileExtName(pathDir: string) {
@@ -74,7 +124,7 @@ function getFileExtName(pathDir: string) {
 
 function isImageFile(file: string) {
   const fileExtName = getFileExtName(file);
-  const supportFiles = ['png', 'jpg', 'jpeg', 'web'];
+  const supportFiles = ['png', 'jpg', 'jpeg', 'webp'];
   return supportFiles.includes(fileExtName);
 }
 
